@@ -70,7 +70,7 @@ let WatchGuardFirewareNetworkSessionLogs = Syslog
 		ThreatCategory = extract("signature_cat=\"(.*?)\"", 1, RawData),
 		ThreatId = extract("signature_id=\"(.*?)\"", 1, RawData),
 		ThreatRiskLevelOriginal = tostring(extract("severity=\"(.*?)\"", 1, RawData));
-let DeniedFQDNWatchGuardFirewareNetworkSessionLogs = Syslog
+let FQDNWatchGuardFirewareNetworkSessionLogs = Syslog
 	// -- Filter only data from 'firewall' process including 'fqdn_dst_match' variable
     | where ProcessName == "firewall" and SyslogMessage has_cs ("fqdn_dst_match")
 	// -- Parsing common elements from all "fqdn_dst_match" events logged
@@ -126,8 +126,8 @@ let DeniedFQDNWatchGuardFirewareNetworkSessionLogs = Syslog
 		SrcHostname = SrcIpAddr,
 		DstHostname = DstIpAddr;
 union isfuzzy=true
-    DeniedWatchGuardFirewareNetworkSessionLogs,
-    DeniedFQDNWatchGuardFirewareNetworkSessionLogs
+    WatchGuardFirewareNetworkSessionLogs,
+    FQDNWatchGuardFirewareNetworkSessionLogs
     | project-rename
         // -- Device
         Dvc = Computer
