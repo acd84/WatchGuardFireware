@@ -23,6 +23,8 @@ let DeniedWatchGuardFirewareNetworkSessionLogs = Syslog
 		NetworkProtocol = toupper(Protocol),
 		SrcPortNumber = toint(extract(@"(\d+\s)", 1, RawData)),
 		DstPortNumber = toint(extract(@"(\s\d+\s)", 1, RawData)),
+		SrcIpAddrDir = iff((ipv4_is_private(SrcIpAddr) or has_any_ipv4_prefix(SrcIpAddr, '224.', '169.254.') or SrcIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
+		DstIpAddrDir = iff((ipv4_is_private(DstIpAddr) or has_any_ipv4_prefix(DstIpAddr, '224.', '169.254.') or DstIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
 		NetworkIcmpId = extract(@"id=(\d+\s)", 1, RawData),
 		NetworkIcmpSeq = extract(@"seq=(\d+\s)", 1, RawData),
 		EventMessage = extract("msg=\"(.*?)\"", 1, RawData),
@@ -30,25 +32,6 @@ let DeniedWatchGuardFirewareNetworkSessionLogs = Syslog
 		DstGeoCountry = extract("geo_dst=\"(.*?)\"", 1, RawData),
 		NetworkConnectionHistory = extract("offset ((.*?) win (.*?) )", 1, RawData), // TCP Offset
 		NetworkRuleName = replace("-00", "", extract(@"\s\(([-\w\s]*?(-00|\sPolicy|DVCP-BOVPN-Allow-in))\)$", 1, RawData, typeof(string))),
-		NetworkDirection = iif( // Local evaluation
-		(ipv4_is_private(SrcIpAddr) 
-		or ipv4_is_match("224.0.0.0",SrcIpAddr,24) // Multicast
-		or ipv4_is_match("169.254.0.0",SrcIpAddr,16) // APIPA (Automatic Private Internet Protocol Addressing)
-        or SrcIpAddr has_any (PublicCompanyIPAddress))
-		and (ipv4_is_private(DstIpAddr) 
-		or ipv4_is_match("224.0.0.0",DstIpAddr,24)
-		or ipv4_is_match("169.254.0.0",DstIpAddr,16)
-        or DstIpAddr has_any (PublicCompanyIPAddress)),
-		'Local', iif( // Outbound/Inbound evaluation
-			ipv4_is_private(SrcIpAddr)
-			or ipv4_is_match("224.0.0.1",SrcIpAddr,24)
-            or ipv4_is_match("169.254.0.0",SrcIpAddr,16),
-			'Outbound', iif( // Inbound/External/PublicIP evaluation
-			    ipv4_is_private(DstIpAddr)
-			    or ipv4_is_match("224.0.0.1",DstIpAddr,24)
-                or ipv4_is_match("169.254.0.0",DstIpAddr,16)
-                or DstIpAddr has_any (PublicCompanyIPAddress),
-			    'Inbound', 'External'))), // Else is External
 		// -- Host Normalization
 		SrcHostname = SrcIpAddr,
 		DstHostname = DstIpAddr,
@@ -94,37 +77,20 @@ let DeniedFQDNWatchGuardFirewareNetworkSessionLogs = Syslog
 		NetworkProtocol = toupper(Protocol),
 		SrcPortNumber = toint(extract(@"(\d+\s)", 1, RawData)),
 		DstPortNumber = toint(extract(@"(\s\d+\s)", 1, RawData)),
+		SrcIpAddrDir = iff((ipv4_is_private(SrcIpAddr) or has_any_ipv4_prefix(SrcIpAddr, '224.', '169.254.') or SrcIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
+		DstIpAddrDir = iff((ipv4_is_private(DstIpAddr) or has_any_ipv4_prefix(DstIpAddr, '224.', '169.254.') or DstIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
 		EventMessage = extract("msg=\"(.*?)\"", 1, RawData),
 		SrcGeoCountry = extract("geo_src=\"(.*?)\"", 1, RawData),
 		DstGeoCountry = extract("geo_dst=\"(.*?)\"", 1, RawData),
 		NetworkConnectionHistory = extract("offset ((.*?) win (.*?) )", 1, RawData), // TCP Offset
 		NetworkRuleName = replace("-00", "", extract(@"\s\(([-\w\s]*?(-00|\sPolicy|DVCP-BOVPN-Allow-in))\)$", 1, RawData, typeof(string))),
-		NetworkDirection = iif( // Local evaluation
-		(ipv4_is_private(SrcIpAddr) 
-		or ipv4_is_match("224.0.0.0",SrcIpAddr,24) // Multicast
-		or ipv4_is_match("169.254.0.0",SrcIpAddr,16) // APIPA (Automatic Private Internet Protocol Addressing)
-        or SrcIpAddr has_any (PublicCompanyIPAddress))
-		and (ipv4_is_private(DstIpAddr) 
-		or ipv4_is_match("224.0.0.0",DstIpAddr,24)
-		or ipv4_is_match("169.254.0.0",DstIpAddr,16)
-        or DstIpAddr has_any (PublicCompanyIPAddress)),
-		'Local', iif( // Outbound/Inbound evaluation
-			ipv4_is_private(SrcIpAddr)
-			or ipv4_is_match("224.0.0.1",SrcIpAddr,24)
-            or ipv4_is_match("169.254.0.0",SrcIpAddr,16),
-			'Outbound', iif( // Inbound/External/PublicIP evaluation
-			    ipv4_is_private(DstIpAddr)
-			    or ipv4_is_match("224.0.0.1",DstIpAddr,24)
-                or ipv4_is_match("169.254.0.0",DstIpAddr,16)
-                or DstIpAddr has_any (PublicCompanyIPAddress),
-			    'Inbound', 'External'))), // Else is External
 		// -- Application
-        AppRouteType = extract("route_type=\"(.*?)\"", 1, RawData),
-        // -- Event
-        EventResultDetails = "FQDN Destination Match",
-        // -- Host Normalization
-		SrcHostname = SrcIpAddr,
-		DstHostname = DstIpAddr;
+		AppRouteType = extract("route_type=\"(.*?)\"", 1, RawData),
+		// -- Event
+		EventResultDetails = "FQDN Destination Match",
+		// -- Host Normalization
+			SrcHostname = SrcIpAddr,
+			DstHostname = DstIpAddr;
 union isfuzzy=true
     DeniedWatchGuardFirewareNetworkSessionLogs,
     DeniedFQDNWatchGuardFirewareNetworkSessionLogs
@@ -148,6 +114,13 @@ union isfuzzy=true
         EventType = 'NetworkSession',
         EventResult = iff(DvcAction has_any (EventResultType), 'Failure', 'Success'),
         EventSeverity = iff(DvcAction has_any (EventResultType), 'Low', 'Informational'),
+        // -- Network
+        NetworkDirection = case(
+            (SrcIpAddrDir == 'Private' and DstIpAddrDir == 'Private'), 'Local',
+            (SrcIpAddrDir == 'Private' and DstIpAddrDir == 'Public'), 'Outbound',
+            (SrcIpAddrDir == 'Public' and DstIpAddrDir == 'Private'), 'Inbound',
+            (SrcIpAddrDir == 'Public' and DstIpAddrDir == 'Public'), 'External',
+            'NA'),
         // -- User Data
         SrcUsernameType = case(isempty(SrcUsername), "", SrcUsername has_cs "@", "UPN", "Simple"),
         DstUsernameType = case(isempty(DstUsername), "", DstUsername has_cs "@", "UPN", "Simple"),
@@ -167,6 +140,8 @@ union isfuzzy=true
         Facility, 
         SeverityLevel,
         MessageId, 
+        SrcIpAddrDir, 
+        DstIpAddrDir, 
         Protocol, 
         SyslogMessage, 
         ProcessID, 
