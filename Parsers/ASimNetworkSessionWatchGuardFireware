@@ -85,12 +85,12 @@ let FQDNWatchGuardFirewareNetworkSessionLogs = Syslog
 		NetworkConnectionHistory = extract("offset ((.*?) win (.*?) )", 1, RawData), // TCP Offset
 		NetworkRuleName = replace("-00", "", extract(@"\s\(([-\w\s]*?(-00|\sPolicy|DVCP-BOVPN-Allow-in))\)$", 1, RawData, typeof(string))),
 		// -- Application
-        AppRouteType = extract("route_type=\"(.*?)\"", 1, RawData),
-        // -- Event
-        EventResultDetails = "FQDN Destination Match",
-        // -- Host Normalization
-		SrcHostname = SrcIpAddr,
-		DstHostname = DstIpAddr;
+		AppRouteType = extract("route_type=\"(.*?)\"", 1, RawData),
+		// -- Event
+		EventResultDetails = "FQDN Destination Match",
+		// -- Host Normalization
+			SrcHostname = SrcIpAddr,
+			DstHostname = DstIpAddr;
 union isfuzzy=true
     WatchGuardFirewareNetworkSessionLogs,
     FQDNWatchGuardFirewareNetworkSessionLogs
