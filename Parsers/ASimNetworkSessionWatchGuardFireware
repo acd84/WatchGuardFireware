@@ -23,8 +23,8 @@ let WatchGuardFirewareNetworkSessionLogs = Syslog
 		NetworkProtocol = toupper(Protocol),
 		SrcPortNumber = toint(extract(@"(\d+\s)", 1, RawData)),
 		DstPortNumber = toint(extract(@"(\s\d+\s)", 1, RawData)),
-		SrcIpAddrDir = iff((ipv4_is_private(SrcIpAddr) or has_any_ipv4_prefix(SrcIpAddr, '224.', '169.254.') or SrcIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
-		DstIpAddrDir = iff((ipv4_is_private(DstIpAddr) or has_any_ipv4_prefix(DstIpAddr, '224.', '169.254.') or DstIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
+		SrcIpAddrDir = iff((ipv4_is_private(SrcIpAddr) or has_any_ipv4_prefix(SrcIpAddr, '224.', '169.254.', '0.0.0.0') or SrcIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
+		DstIpAddrDir = iff((ipv4_is_private(DstIpAddr) or has_any_ipv4_prefix(DstIpAddr, '224.', '169.254.', '0.0.0.0') or DstIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
 		NetworkIcmpId = extract(@"id=(\d+\s)", 1, RawData),
 		NetworkIcmpSeq = extract(@"seq=(\d+\s)", 1, RawData),
 		EventMessage = extract("msg=\"(.*?)\"", 1, RawData),
@@ -77,20 +77,20 @@ let FQDNWatchGuardFirewareNetworkSessionLogs = Syslog
 		NetworkProtocol = toupper(Protocol),
 		SrcPortNumber = toint(extract(@"(\d+\s)", 1, RawData)),
 		DstPortNumber = toint(extract(@"(\s\d+\s)", 1, RawData)),
-		SrcIpAddrDir = iff((ipv4_is_private(SrcIpAddr) or has_any_ipv4_prefix(SrcIpAddr, '224.', '169.254.') or SrcIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
-		DstIpAddrDir = iff((ipv4_is_private(DstIpAddr) or has_any_ipv4_prefix(DstIpAddr, '224.', '169.254.') or DstIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
+        SrcIpAddrDir = iff((ipv4_is_private(SrcIpAddr) or has_any_ipv4_prefix(SrcIpAddr, '224.', '169.254.', '0.0.0.0') or SrcIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
+		DstIpAddrDir = iff((ipv4_is_private(DstIpAddr) or has_any_ipv4_prefix(DstIpAddr, '224.', '169.254.', '0.0.0.0') or DstIpAddr has_any (PublicCompanyIPAddress)), 'Private',	'Public'),
 		EventMessage = extract("msg=\"(.*?)\"", 1, RawData),
 		SrcGeoCountry = extract("geo_src=\"(.*?)\"", 1, RawData),
 		DstGeoCountry = extract("geo_dst=\"(.*?)\"", 1, RawData),
 		NetworkConnectionHistory = extract("offset ((.*?) win (.*?) )", 1, RawData), // TCP Offset
 		NetworkRuleName = replace("-00", "", extract(@"\s\(([-\w\s]*?(-00|\sPolicy|DVCP-BOVPN-Allow-in))\)$", 1, RawData, typeof(string))),
 		// -- Application
-		AppRouteType = extract("route_type=\"(.*?)\"", 1, RawData),
-		// -- Event
-		EventResultDetails = "FQDN Destination Match",
-		// -- Host Normalization
-			SrcHostname = SrcIpAddr,
-			DstHostname = DstIpAddr;
+        AppRouteType = extract("route_type=\"(.*?)\"", 1, RawData),
+        // -- Event
+        EventResultDetails = "FQDN Destination Match",
+        // -- Host Normalization
+		SrcHostname = SrcIpAddr,
+		DstHostname = DstIpAddr;
 union isfuzzy=true
     WatchGuardFirewareNetworkSessionLogs,
     FQDNWatchGuardFirewareNetworkSessionLogs
